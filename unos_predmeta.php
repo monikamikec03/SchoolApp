@@ -65,7 +65,7 @@ if (isset($_GET['id'])) {
     <div class="my-3 d-flex flex-column">
         <label for="naziv_predmeta" class="me-3">Naziv predmeta:</label>
         <span class='text-danger'><?php echo $naziv_predmetaErr; ?></span>
-        <input type="text" name="naziv_predmeta" value="<?php echo $naziv_predmeta; ?>" class="form-control" minlength="2" maxlength="100" required id="naziv_predmeta" autocomplete="off">
+        <input type="text" name="naziv_predmeta" value="<?php echo $naziv_predmeta; ?>" class="form-control" minlength="2" maxlength="100" id="naziv_predmeta" autocomplete="off">
         
     </div>
     <?php echo $porukaErr; ?>

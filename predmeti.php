@@ -4,7 +4,7 @@
         <h4 class='p-0 m-0'>Predmeti</h4>
         <a href='unos_predmeta.php' class='btn btn-primary ms-4'>+ Dodaj</a>
     </div>
-    <table class='table table-stripped'>
+    <table class='table table-striped'>
         <thead>
             <tr>
                 <th>R.br.</th>

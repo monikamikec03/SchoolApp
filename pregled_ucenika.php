@@ -1,9 +1,11 @@
 <?php
 include 'zaglavlje.php';
 
+//Resetiram sve vrijednosti jer mi lokalno javlja grešku undefined variable
 $ucenik_id = $predmet_id = $ocjena_id = $id_zapisa = '';
 $ucenik_idErr = $predmet_idErr = $ocjena_idErr = $porukaErr =  '';
 $zaokruzeno = $sredina = 0;
+
 if ($_SERVER['REQUEST_METHOD'] == 'POST' && isset($_POST['unos_ocjene'])) {
 
     $id_zapisa = test_input($_POST['id_zapisa']);
@@ -36,9 +38,12 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST' && isset($_POST['unos_ocjene'])) {
     }
 
     if(empty($ucenik_idErr) && empty($predmet_idErr) && empty($ocjena_idErr)){
+
+        //insert
         if (empty($id_zapisa)) {
             $sql = "INSERT INTO ocjene_ucenika (ucenik_id, predmet_id, ocjena_id) VALUES($ucenik_id, $predmet_id, $ocjena_id)";
         }
+        //update
         else{
             $sql = "UPDATE ocjene_ucenika SET ocjena_id = $ocjena_id WHERE id = $id_zapisa AND predmet_id = $predmet_id AND ucenik_id = $ucenik_id";
         }
@@ -57,10 +62,11 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST' && isset($_POST['unos_ocjene'])) {
 }
 
 
+//dohvaćam podatke za učenika
 if (isset($_GET['id'])) {
     $id_ucenika = test_input($_GET['id']);
     if (!preg_match('/^[0-9]*$/', $id_ucenika)) {
-        echo "<script>alert('Neispravan ID ucenika');window.location.href='index.php'</script>";
+        echo "<script>alert('Neispravan ID učenika');window.location.href='index.php'</script>";
     }
     $sql = "SELECT * FROM ucenici WHERE id_ucenika = $id_ucenika";
     $res = mysqli_query($veza, $sql);
@@ -71,25 +77,27 @@ if (isset($_GET['id'])) {
     $naziv_ucenika = $red['naziv_ucenika'];
     $id_ucenika = $red['id_ucenika'];
 
+    //dohvaćam ocjene učenika
     $sql = "SELECT * FROM ocjene_ucenika WHERE ucenik_id = $id_ucenika";
     $res = mysqli_query($veza, $sql);
     if(mysqli_num_rows($res) > 0){
         while($red = mysqli_fetch_array($res)){
             $uneseni_predmet_id = $red["predmet_id"];
+            //sve predmete pospremam u jedno polje kako bih kasnije mogla izračunati aritmetičku sredinu
             $uneseni_predmeti[] = $uneseni_predmet_id;
         }
         $uneseni_predmet_id = '';
         $uneseni_predmeti_str = implode(',', $uneseni_predmeti);
 
         $prvi_unos = 1;
-        
     }
     else{
         $prvi_unos = 0;
     } 
+    //prvi_unos mi treba dolje u select polju kada dohvaćam sve predmete, ne želim onda provjeravat koji predmeti su već uneseni jer nije nijedan, odnosno ocjene za koje predmete
     $backLink = "index.php";   
 }
-else if(isset($_GET['id_zapisa'])){
+else if(isset($_GET['id_zapisa'])){ //update ocjene predmeta
     $id_zapisa = test_input($_GET['id_zapisa']);
     if (!preg_match('/^[0-9]*$/', $id_zapisa)) {
         echo "<script>alert('Neispravan ID zapisa');window.location.href='index.php'</script>";
@@ -118,7 +126,9 @@ else{
         <div>
             <a href='<?php echo $backLink; ?>' class='btn btn-light'>Natrag</a>  
         </div>
+        
     </div>
+    <!-- Vraćam error u slučaju da dođe do izmjene -->
     <p class='text-danger'><?php echo $ucenik_idErr; ?></p>
     <p class='text-danger'><?php echo $predmet_idErr; ?></p>
     <p class='text-danger'><?php echo $ocjena_idErr; ?></p>
@@ -136,11 +146,13 @@ else{
                     <input type="hidden" name="id_zapisa" value="<?php echo $id_zapisa; ?>">
   
                     <th>
+                        <!-- ovaj empty($id_zapisa) mi stavlja jednu klasu i kasnije kada imam update ocjene, želim koristit istu formu, ali ne želim da mi korisnik mijenja predmet i onda mu onemogućim promjenu podataka u ovom polju -->
                         <select name="predmet_id" class="form-select <?php if(!empty($id_zapisa)) echo 'editable'; ?>" id="predmet_id">
  
 
                             <option selected value=''>Odaberite predmet</option>
                             <?php
+                            //tu su mi sad 2 select uvjeta, ovisno o tome jel ima već predmeta u bazi tak da maknem sve one za koje je već ocjena unesena, odnosno dohvatim sve ako nismo unijeli još nijednu ocjenu
                             if(empty($prvi_unos)){
                                 
                                 $sql = "SELECT * FROM predmeti ORDER BY naziv_predmeta";
@@ -185,6 +197,7 @@ else{
         </thead>
         <tbody>
         <?php
+        //ovaj if sakriva cijelu tablicu ako dođe do izmjene, na taj način koristim opet istu formu, ali ne želim da osoba klika po nećem drugom, čisto radi intuitivnosti jer ako je kliknula da uredi ocjenu iz Matematike, u formu joj šibnem podatke za to i sve drugo sakrijem tak da se malo jače naglasi efekt uređivanja podataka.
         if (empty($id_zapisa)) {
             $sql = "SELECT * FROM ocjene_ucenika, predmeti, ocjene WHERE ucenik_id = $id_ucenika 
             AND predmeti.id_predmeta = ocjene_ucenika.predmet_id
@@ -199,13 +212,16 @@ else{
                     $naziv_predmeta = $red['naziv_predmeta'];
                     $naziv_ocjene = $red['naziv_ocjene'];
                     $id_ocjene = $red['id_ocjene'];
-
+                    if ($id_ocjene == 1)
+                        $klasa = 'text-danger';
+                    else
+                        $klasa = '';
                     $array_ocjene[] = $id_ocjene;
 
                     ?>
                 <tr>
                     <td><?php echo $naziv_predmeta; ?></td>
-                    <td><?php echo $naziv_ocjene; ?></td>
+                    <td class='<?php echo $klasa; ?>'><?php echo $naziv_ocjene; ?></td>
                     <td class="text-center">
                         <a class="link-primary" href="pregled_ucenika.php?id_zapisa=<?php echo $id; ?>">Uredi</a>
                         <a class="link-danger" href="obrisi_ocjenu.php?id=<?php echo $id; ?>">Obriši</a>
@@ -228,6 +244,7 @@ else{
         </tbody>
     </table>
     <?php
+    //ako nema nijedne ocjene, nema smisla pokazat prosjek ocjena
     if (empty($id_zapisa)) { ?>
     <div class="bg-light p-3 border d-flex align-items-center justify-content-between">
         <p class='m-0'>Prosjek ocjena: <span class='fw-bold'><?php echo number_format($sredina, 2); ?></span></p>
@@ -235,18 +252,20 @@ else{
             <?php
             $sql = "SELECT * FROM ocjene WHERE id_ocjene = $zaokruzeno";
             $res = mysqli_query($veza, $sql);
-            if (in_array(1, $array_ocjene)) {
-                $konacna_ocjena = '<span class="text-danger">Popravni ispit, potrebno ispraviti jedinice.</span>';
-            } else {
-                if (mysqli_num_rows($res) > 0) {
-                    $red = mysqli_fetch_array($res);
-                    $konacna_ocjena = $red["naziv_ocjene"];
+            if (mysqli_num_rows($res) > 0) {
+                if (in_array(1, $array_ocjene)) {
+                    $konacna_ocjena = '<span class="text-danger">Popravni ispit, potrebno ispraviti jedinice.</span>';
                 } else {
-                    $konacna_ocjena = '';
+                    if (mysqli_num_rows($res) > 0) {
+                        $red = mysqli_fetch_array($res);
+                        $konacna_ocjena = $red["naziv_ocjene"];
+                    } else {
+                        $konacna_ocjena = '';
+                    }
                 }
+
+                echo $konacna_ocjena;
             }
-            
-            echo $konacna_ocjena;
             
             ?>
         </h3>
